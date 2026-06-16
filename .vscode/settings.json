@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./inheritance",
+        "./encapsulation/__pycache__"
+    ]
+}
