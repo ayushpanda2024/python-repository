@@ -9,7 +9,7 @@ week_ago = today - timedelta(days=7)
 def get_weather_data(latitude,longitude):
     start_date = week_ago.strftime("%Y-%m-%d")
     end_date = today.strftime("%Y-%m-%d")
-# Get Paris weather for past week
+# Get  weather for past week
     url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&start_date={start_date}&end_date={end_date}&daily=temperature_2m_max,temperature_2m_min"
     response = requests.get(url)
     data = response.json()
