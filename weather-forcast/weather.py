@@ -56,6 +56,6 @@ def save_data(data,df,city_name):
         os.makedirs('data')
     df.to_csv(f'data/{city_name}_weather.csv', index=False)
 
-latitude =  float(input("Enter the latitude: "))
-longitude = float(input("Enter the longitude: "))
-get_weather_data(latitude=latitude, longitude=longitude)
+lat =  float(input("Enter the latitude: "))
+lon = float(input("Enter the longitude: "))
+get_weather_data(latitude=lat, longitude=lon)
