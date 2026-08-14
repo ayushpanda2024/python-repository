@@ -1,67 +1,100 @@
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
 import requests
 from datetime import datetime, timedelta
-import pandas as pd
-import matplotlib.pyplot as plt
 from geopy.geocoders import Nominatim
-import os
-# Calculate dates
-today = datetime.now()
-week_ago = today - timedelta(days=7)
-def get_weather_data(latitude,longitude):
+
+
+app = FastAPI()
+
+# Allow React to communicate with Python
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Geocoder
+geolocator = Nominatim(user_agent="weather_app")
+
+
+@app.get("/")
+def home():
+    return {
+        "message": "Weather API is running"
+    }
+
+
+@app.get("/weather")
+def get_weather(city: str):
+
+    # -----------------------------
+    # 1. Find city coordinates
+    # -----------------------------
+
+    location = geolocator.geocode(city)
+
+    if not location:
+        raise HTTPException(
+            status_code=404,
+            detail="City not found"
+        )
+
+    latitude = location.latitude
+    longitude = location.longitude
+
+
+    today = datetime.now()
+    week_ago = today - timedelta(days=7)
+
     start_date = week_ago.strftime("%Y-%m-%d")
     end_date = today.strftime("%Y-%m-%d")
-# Get  weather for past week
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&start_date={start_date}&end_date={end_date}&daily=temperature_2m_max,temperature_2m_min"
+
+    url = (
+        f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&start_date={start_date}&end_date={end_date}&daily=temperature_2m_max,temperature_2m_min&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&timezone=auto"
+    )
+
     response = requests.get(url)
+
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=500,
+            detail="Weather API failed"
+        )
+
     data = response.json()
-    url2 = f"https://nominatim.openstreetmap.org/reverse?lat={latitude}&lon={longitude}&format=json"
-    response2 = requests.get(
-    url2,
-    headers={"User-Agent": "MyApp/1.0"}
-      )
-    data2 = response2.json()
-    city_name =data2['address']['city']
-    daily_data = data['daily']
 
-# Create a DataFrame
-    df = pd.DataFrame({
-        'date': daily_data['time'],
-        'max_temp': daily_data['temperature_2m_max'],
-        'min_temp': daily_data['temperature_2m_min']
-    })
+    daily = data["daily"]
 
-# Convert date strings to datetime
-    df['date'] = pd.to_datetime(df['date'])
-    #______________________________________________________________________________________________
-    plt.figure(figsize=(10, 6))
-    plt.plot(df['date'], df['max_temp'], marker='o', label='Max Temp')
-    plt.plot(df['date'], df['min_temp'], marker='o', label='Min Temp')
+    daily_weather = []
 
-    # Add labels and title
-    plt.xlabel('Date')
-    plt.ylabel('Temperature (°C)')
-    plt.title(f'{city_name} Weather - Past 7 Days')
-    plt.legend()
+    for i in range(len(daily["time"])):
 
-    # Rotate x-axis labels for readability
-    plt.xticks(rotation=40)
-    plt.tight_layout()
+        daily_weather.append({
+            "date": daily["time"][i],
+            "max_temp": daily["temperature_2m_max"][i],
+            "min_temp": daily["temperature_2m_min"][i]
+        })
 
-    # Save the plot
-    plt.savefig(f'{city_name}weather_chart.png')
-    plt.show()
-    
+    current = data.get("current", {})
 
-def save_data(data,df,city_name): 
-    if not os.path.exists('data'):
-        os.makedirs('data')
-    df.to_csv(f'data/{city_name}_weather.csv', index=False)
-geolocator = Nominatim(user_agent="my_geocoder") 
-city = input("Enter city name: ") 
-location = geolocator.geocode(city) 
-if location: 
-     lat = location.latitude
-     lon = location.longitude
-else:  
-    print("City not found")
-get_weather_data(latitude=lat, longitude=lon)
+    current_weather = {
+        "temperature": current.get("temperature_2m"),
+        "humidity": current.get("relative_humidity_2m"),
+        "wind_speed": current.get("wind_speed_10m"),
+        "weather_code": current.get("weather_code")
+    }
+
+
+
+    return {
+        "city": location.address,
+        "latitude": latitude,
+        "longitude": longitude,
+        "current": current_weather,
+        "daily": daily_weather
+    }
