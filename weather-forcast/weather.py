@@ -2,6 +2,7 @@ import requests
 from datetime import datetime, timedelta
 import pandas as pd
 import matplotlib.pyplot as plt
+from geopy.geocoders import Nominatim
 import os
 # Calculate dates
 today = datetime.now()
@@ -55,7 +56,12 @@ def save_data(data,df,city_name):
     if not os.path.exists('data'):
         os.makedirs('data')
     df.to_csv(f'data/{city_name}_weather.csv', index=False)
-
-lat =  float(input("Enter the latitude: "))
-lon = float(input("Enter the longitude: "))
+geolocator = Nominatim(user_agent="my_geocoder") 
+city = input("Enter city name: ") 
+location = geolocator.geocode(city) 
+if location: 
+     lat = location.latitude
+     lon = location.longitude
+else:  
+    print("City not found")
 get_weather_data(latitude=lat, longitude=lon)
