@@ -2,5 +2,6 @@
     "python.analysis.extraPaths": [
         "./inheritance",
         "./encapsulation/__pycache__"
-    ]
+    ],
+    "git.ignoreLimitWarning": true
 }
