@@ -1,158 +1,80 @@
-import { Search, MapPin, Droplets, Wind, Eye, Gauge } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Search, MapPin, Droplets, Wind } from "lucide-react";
 import "./App.css";
 
 function App() {
+  const [city, setCity] = useState("Bhubaneswar");
+  const [weather, setWeather] = useState(null);
+
+  const fetchWeather = async () => {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/weather?city=${encodeURIComponent(city)}`
+      );
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.detail || "Weather API failed");
+
+      setWeather(data);
+    } catch (error) {
+      setWeather(null);
+      console.error("Error:", error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchWeather();
+  }, []);
+
   return (
     <div className="app">
-      <header className="navbar">
-        <div className="logo">☁️ Weatherly</div>
+      <div className="search-box">
+        <Search size={20} />
+        <input
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          placeholder="Search city..."
+        />
+        <button onClick={fetchWeather}>Search</button>
+      </div>
 
-        <div className="search-box">
-          <Search size={20} />
-          <input
-            type="text"
-            placeholder="Search city..."
-          />
-        </div>
-
-        <button className="unit-btn">°C</button>
-      </header>
-
-      <main className="container">
-
-        <section className="current-weather">
-
+      {weather && (
+        <div className="weather">
           <div className="location">
-            <MapPin size={20} />
-            <span>Bhubaneswar, India</span>
+            <MapPin />
+            <h2>{weather.city}</h2>
           </div>
 
-          <div className="weather-main">
-            <div className="weather-icon">☀️</div>
+          <div className="temperature">
+            ☀️
+            <h1>{weather.current.temperature}°C</h1>
+            <p>{weather.current.description}</p>
+          </div>
+
+          <div className="details">
+            <div>
+              <Droplets />
+              <p>Humidity</p>
+              <strong>{weather.current.humidity}%</strong>
+            </div>
 
             <div>
-              <h1>29°</h1>
-              <h2>Partly Cloudy</h2>
-              <p>Feels like 31°</p>
+              <Wind />
+              <p>Wind</p>
+              <strong>{weather.current.wind_speed} km/h</strong>
             </div>
           </div>
-
-          <div className="high-low">
-            <span>H: 32°</span>
-            <span>L: 25°</span>
-          </div>
-
-        </section>
-
-        <section className="details">
-
-          <div className="detail-card">
-            <Droplets />
-            <span>Humidity</span>
-            <strong>72%</strong>
-          </div>
-
-          <div className="detail-card">
-            <Wind />
-            <span>Wind</span>
-            <strong>14 km/h</strong>
-          </div>
-
-          <div className="detail-card">
-            <Eye />
-            <span>Visibility</span>
-            <strong>8 km</strong>
-          </div>
-
-          <div className="detail-card">
-            <Gauge />
-            <span>Pressure</span>
-            <strong>1012 hPa</strong>
-          </div>
-
-        </section>
-
-        <section className="forecast">
-
-          <h2>Hourly Forecast</h2>
-
-          <div className="hourly">
-
-            <div className="hour active">
-              <span>Now</span>
-              <div>☀️</div>
-              <strong>29°</strong>
+          <div className="forecast">
+           {weather.daily.map((day) => (
+           <div key={day.date} className="forecast-day">
+             <p>{day.date}</p>
+             <strong>{day.max_temp}°C</strong>
+             <p>Low: {day.min_temp}°C</p>
             </div>
-
-            <div className="hour">
-              <span>4 AM</span>
-              <div>☀️</div>
-              <strong>28°</strong>
-            </div>
-
-            <div className="hour">
-              <span>5 AM</span>
-              <div>☁️</div>
-              <strong>28°</strong>
-            </div>
-
-            <div className="hour">
-              <span>6 AM</span>
-              <div>☁️</div>
-              <strong>27°</strong>
-            </div>
-
-            <div className="hour">
-              <span>7 AM</span>
-              <div>🌧️</div>
-              <strong>27°</strong>
-            </div>
-
-            <div className="hour">
-              <span>8 AM</span>
-              <div>🌧️</div>
-              <strong>28°</strong>
-            </div>
-
-          </div>
-
-        </section>
-
-        <section className="forecast">
-
-          <h2>7-Day Forecast</h2>
-
-          <div className="weekly">
-
-            <div className="day">
-              <span>Today</span>
-              <span>☀️</span>
-              <strong>32° / 25°</strong>
-            </div>
-
-            <div className="day">
-              <span>Sunday</span>
-              <span>⛅</span>
-              <strong>33° / 26°</strong>
-            </div>
-
-            <div className="day">
-              <span>Monday</span>
-              <span>🌧️</span>
-              <strong>31° / 25°</strong>
-            </div>
-
-            <div className="day">
-              <span>Tuesday</span>
-              <span>🌧️</span>
-              <strong>30° / 24°</strong>
-            </div>
-
-          </div>
-
-        </section>
-
-      </main>
+  ))}
+</div>
+        </div>
+      )}
     </div>
   );
 }
